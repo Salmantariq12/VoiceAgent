@@ -1,0 +1,242 @@
+﻿@page
+@model VoiceAgent.Pages.VoiceModel
+@{
+    Layout = "_Layout";
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - VoiceAgent</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/VoiceAgent.styles.css" asp-append-version="true" />
+    <style>
+        body {
+            background-color: black;
+            color: white;
+        }
+
+        header h1, h3, h4 {
+            color: #37AA9DCC;
+        }
+
+        textarea.form-control, select.form-select {
+            background-color: #333;
+            color: white;
+            border: 1px solid #37AA9DCC;
+        }
+
+        .btn-primary {
+            background-color: #37AA9DCC;
+            border-color: #37AA9DCC;
+        }
+
+            .btn-primary:hover {
+                background-color: white;
+                color: #37AA9DCC;
+                border-color: #37AA9DCC;
+            }
+
+        footer {
+            background-color: black;
+            color: white;
+        }
+
+        .container {
+            padding-top: 50px;
+        }
+
+        .search-input {
+            background-color: #333;
+            color: white;
+            border: 1px solid #37AA9DCC;
+            margin-bottom: 15px;
+        }
+
+        .btn-primary.mt-3 {
+            margin-bottom: 5px;
+            margin-top: -30px; 
+            margin-left: 15px; 
+        }
+
+        .btn.btn-primary {
+            margin-top: 10px; 
+        }
+
+
+
+    </style>
+</head>
+<body>
+    <header></header>
+
+    <div class="container mt-5">
+        <h1>@ViewData["Title"]</h1>
+
+        <div class="mb-4">
+            <h4>Search Voice</h4>
+            <input type="text" id="voiceSearch" class="form-control search-input" placeholder="Search Voice" onkeyup="filterVoices()" />
+        </div>
+
+        <div class="mb-4">
+            <h4>Voice</h4>
+            @if (Model.Voices != null && Model.Voices.Any())
+            {
+                <select class="form-select" id="voiceSelect">
+                    <option selected>Select Voice</option>
+                    @foreach (var voice in Model.Voices)
+                    {
+                        <option value="@voice.Id" class="voice-option">@voice.Name</option>
+                    }
+                </select>
+            }
+            else
+            {
+                <p>No voices available. Please check the API or try again later.</p>
+            }
+        </div>
+
+        <input type="hidden" id="tempDataJson" value="@TempData["JsonData"]" />
+
+        <button class="btn btn-primary" onclick="deployAgent()">Create Agent</button>
+
+        <button class="btn btn-primary mt-3" onclick="playVoice()">Play Voice</button>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+
+    <script>
+        var voices = @Html.Raw(Json.Serialize(Model.Voices));
+        var tempDataJson = document.getElementById('tempDataJson').value;
+
+        function filterVoices() {
+            var input = document.getElementById('voiceSearch').value.toLowerCase();
+            var options = document.querySelectorAll('#voiceSelect .voice-option');
+
+            options.forEach(function(option) {
+                var voiceName = option.innerText.toLowerCase();
+                if (voiceName.includes(input)) {
+                    option.style.display = 'block';
+                } else {
+                    option.style.display = 'none';
+                }
+            });
+        }
+
+        function deployAgent() {
+            var voiceSelect = document.getElementById('voiceSelect');
+            var selectedVoiceId = String(voiceSelect.value);
+
+                    if (!selectedVoiceId || selectedVoiceId === "Select Voice") {
+                alert("No voice selected. Please choose a voice before proceeding.");
+                return;
+            }
+
+            var tempData = JSON.parse(tempDataJson);
+
+            var data = {};
+            data.name = tempData.pageData.name || null;
+            data.firstMessage = tempData.pageData.firstMessage || null;
+
+            data.knowledgeBase = Array.isArray(tempData.pageData.knowledgeBase) && tempData.pageData.knowledgeBase.length > 0
+                ? tempData.pageData.knowledgeBase 
+                : null; 
+
+            data.transcriber = tempData.transcription.transcriber.provider && tempData.transcription.transcriber.language
+                ? {
+                    provider: tempData.transcription.transcriber.provider,
+                    language: tempData.transcription.transcriber.language
+                }
+                : null;
+
+            data.voice = selectedVoiceId
+                ? {
+                    voiceId: selectedVoiceId,
+                    provider: "cartesia"
+                }
+                : null;
+
+            data.model = tempData.pageData.model.provider && tempData.pageData.model.model && tempData.pageData.model.messages
+                ? {
+                    provider: tempData.pageData.model.provider,
+                    model: tempData.pageData.model.model,
+                    messages: tempData.pageData.model.messages,
+                    knowledgeBase: Array.isArray(tempData.pageData.knowledgeBase) && tempData.pageData.knowledgeBase.length > 0
+                        ? tempData.pageData.knowledgeBase 
+                        : null 
+                }
+                : null;
+
+
+            const baseUrl = '@Url.Content("~/")';
+            const sanitizedBaseUrl = baseUrl.replace(/\/$/, '');
+
+            fetch("https://localhost:7058/api/ExternalApi/createAgent", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+            })
+            .then(response => response.json())
+            .then(agentData => {
+                if (agentData && agentData.id && agentData.name) {
+                    var agentId = agentData.id;
+                    var agentName = agentData.name;
+                    var firstMessage = data.firstMessage;
+
+                    var successMessage = document.createElement('div');
+                    successMessage.classList.add('alert', 'alert-success');
+                    successMessage.textContent = "Agent '" + agentName + "' created successfully!";
+                    document.querySelector('.container').appendChild(successMessage);
+
+                    setTimeout(function () {
+                        window.location.href = '/Analysis?agentId=' + encodeURIComponent(agentId) +
+                                               '&agentName=' + encodeURIComponent(agentName) +
+                                               '&firstMessage=' + encodeURIComponent(firstMessage);
+                    }, 3000);
+                } else {
+                    alert("Failed to create the agent. Please try again.");
+                }
+            })
+            .catch(() => {
+                alert("An error occurred. Please try again.");
+            });
+        }
+
+
+
+     function playVoice() {
+    var voiceSelect = document.getElementById('voiceSelect');
+    var selectedVoiceId = String(voiceSelect.value);
+
+    if (selectedVoiceId) {
+        fetch(`/api/ExternalApi/getVoice/${selectedVoiceId}`, {
+            method: 'GET',
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Error fetching audio');
+            }
+            return response.blob(); 
+        })
+        .then(audioBlob => {
+            var audioUrl = URL.createObjectURL(audioBlob);
+            var audio = new Audio(audioUrl);
+            audio.play();
+        })
+        .catch(error => {
+            alert("Error generating audio. Please try again.");
+        });
+    } else {
+        alert("Please select a voice first.");
+    }
+}
+
+    </script>
+
+</body>
+</html>
+

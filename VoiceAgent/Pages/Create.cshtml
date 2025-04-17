@@ -1,0 +1,354 @@
+﻿@page
+@model VoiceAgent.Pages.CreateModel
+@{
+    Layout = "_Layout";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - VoiceAgent</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/VoiceAgent.styles.css" asp-append-version="true" />
+    <style>
+        body {
+            background-color: black;
+            color: white;
+        }
+
+        header h1,
+        h4 {
+            color: #37AA9DCC;
+        }
+
+        textarea.form-control, input.form-control, select.form-control {
+            background-color: #333;
+            color: white;
+            border: 1px solid #37AA9DCC;
+        }
+
+        textarea[name="SystemPrompt"] {
+            height: 200px;
+        }
+
+        .btn-primary {
+            background-color: #37AA9DCC;
+            border-color: #37AA9DCC;
+            position: relative;
+            top: -65px; 
+        }
+
+            .btn-primary:hover {
+                background-color: white;
+                color: #37AA9DCC;
+                border-color: #37AA9DCC;
+            }
+
+
+        footer {
+            background-color: black;
+            color: white;
+        }
+
+        .dropdown-container {
+            display: flex;
+            justify-content: flex-end;
+            gap: 20px;
+        }
+
+        .dropdown {
+            width: 200px;
+        }
+
+        #knowledgeBaseContainer {
+            background-color: #333;
+            color: white;
+            border: 1px solid #37AA9DCC;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+            #knowledgeBaseContainer .form-check {
+                background-color: #333;
+                padding: 5px;
+            }
+
+            #knowledgeBaseContainer .form-check-input {
+                background-color: #333;
+                border-color: #37AA9DCC;
+                color: white;
+            }
+
+            #knowledgeBaseContainer .form-check-label {
+                color: white;
+            }
+
+            #knowledgeBaseContainer .form-check-input:checked {
+                background-color: #37AA9DCC;
+                border-color: #37AA9DCC;
+            }
+
+            #knowledgeBaseContainer .form-check-input:focus {
+                border-color: #37AA9DCC;
+                box-shadow: 0 0 0 0.25rem rgba(55, 170, 156, 0.5);
+            }
+            
+            #dropdownField{
+            background-color: #333;
+              }
+
+            #dropdownField::placeholder {
+                color: white;
+            }
+
+    </style>
+
+</head>
+<body>
+    <header>
+    </header>
+
+    <div class="container mt-5">
+        <h1>@ViewData["Title"]</h1>
+
+        @if (TempData["ApiResponse"] != null)
+        {
+            <div class="alert alert-info">@TempData["ApiResponse"]</div>
+        }
+
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+        }
+
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+        }
+
+        <form method="post" id="createForm">
+            <div class="mb-4">
+                <h4>Enter Agent Name</h4>
+                <input type="text" class="form-control" name="Name" placeholder="Enter your agent name here..." value="@Model.Name" minlength="6" required />
+                <span asp-validation-for="Name" class="text-danger"></span>
+            </div>
+
+            <div class="mb-4">
+                <h4>First Message</h4>
+                <input type="text" class="form-control" name="Message" placeholder="First Message" value="@Model.Message" />
+                <span asp-validation-for="Message" class="text-danger"></span>
+            </div>
+
+            <div class="mb-4">
+                <h4>System Prompt</h4>
+                <textarea class="form-control" name="SystemPrompt" placeholder="Enter the system prompt here...">@Model.SystemPrompt</textarea>
+                <span asp-validation-for="SystemPrompt" class="text-danger"></span>
+            </div>
+
+            <div class="dropdown-container mb-4">
+                <div class="dropdown">
+                    <h4>Provider</h4>
+                    <select class="form-control" name="provider" id="providerDropdown">
+                        <option value="openai">OpenAI</option>
+                        <option value="openrouter">OpenRouter</option>
+                        <option value="perplexity-ai">PerplexityAI</option>
+                        <option value="deepinfra">DeepInfra</option>
+                        <option value="anyscale">AnyScale</option>
+                        <option value="groq">Groq</option>
+                        <option value="together-ai">TogetherAI</option>
+                        <option value="google">Google</option>
+                        <option value="anthropic">Anthropic</option>
+                        <option value="xai">XAI</option>
+                    </select>
+                </div>
+
+                <div class="dropdown">
+                    <h4>Model</h4>
+                    <select class="form-control" name="Model" id="modelDropdown">
+                        <option>Option 1</option>
+                        <option>Option 2</option>
+                        <option>Option 3</option>
+                    </select>
+                </div>
+
+                <div class="dropdown" style="position: relative; display: inline-block; width: 300px; margin-top:32px;">
+                    <input type="text" id="dropdownField" placeholder="Select Knowledge Base" readonly onclick="toggleDropdown()"
+                           style="width: 100%; padding: 8px; border: 1px solid #37AA9DCC; cursor: pointer; border-radius: 8px;">
+                    <div class="form-group" id="knowledgeBaseContainer"
+                         style="max-height: 200px; overflow-y: auto; border: 1px solid #37AA9DCC; padding: 10px; background-color: #333;
+                display: none; position: absolute; z-index: 1; width: 100%; color: #333; border-radius: 8px;
+                padding-left: 24px; text-align: left;">
+                    </div>
+                </div>
+           </div>
+
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <button class="btn btn-primary" type="submit">Next</button>
+        </form>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-v ersion="true"></script>
+    <script>
+
+        const baseUrl = '@Url.Content("~/")';
+        window.onload = function () {
+            const apiUrl = `${baseUrl.replace(/\/$/, '')}/api/externalapi/getKnowledgeBase`;
+            fetch(apiUrl)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data && Array.isArray(data)) {
+                        const knowledgeBaseContainer = document.getElementById("knowledgeBaseContainer");
+
+                        knowledgeBaseContainer.innerHTML = "";
+
+                        data.forEach(function (file) {
+                            const divElement = document.createElement("div");
+                            divElement.className = "form-check";
+
+                            const inputElement = document.createElement("input");
+                            inputElement.type = "checkbox";
+                            inputElement.className = "form-check-input";
+                            inputElement.name = "KnowledgeBaseId";
+                            inputElement.value = file.id;
+                            inputElement.id = `knowledgeBase_${file.id}`;
+                            inputElement.style = "margin-right: 10px;";
+
+                            const labelElement = document.createElement("label");
+                            labelElement.className = "form-check-label";
+                            labelElement.htmlFor = `knowledgeBase_${file.id}`;
+                            labelElement.textContent = file.name;
+
+                            divElement.appendChild(inputElement);
+                            divElement.appendChild(labelElement);
+                            knowledgeBaseContainer.appendChild(divElement);
+                        });
+
+            document.querySelectorAll('input[name="KnowledgeBaseIds"]').forEach(input => {
+            input.addEventListener('change', () => {
+                const selectedValues = Array.from(
+                    document.querySelectorAll('input[name="KnowledgeBaseIds"]:checked')
+                ).map(input => input.value);
+
+                const dropdownField = document.getElementById("dropdownField");
+                dropdownField.value = selectedValues.join(", ") || "Select Knowledge Base";
+
+                document.getElementById("knowledgeBaseForm").elements["KnowledgeBaseIds"].value = selectedValues.join(",");
+            });
+        });
+
+
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching knowledge base:', error);
+                    const knowledgeBaseContainer = document.getElementById("knowledgeBaseContainer");
+                    knowledgeBaseContainer.innerHTML = `<div class="text-danger">Error loading knowledge base: ${error.message}</div>`;
+                });
+        };
+
+
+
+
+            function toggleDropdown() {
+            const dropdownContent = document.getElementById("knowledgeBaseContainer");
+            dropdownContent.style.display = (dropdownContent.style.display === "block") ? "none" : "block";
+        }
+
+
+        window.onclick = function(event) {
+            const dropdownContent = document.getElementById("knowledgeBaseContainer");
+            const dropdownField = document.getElementById("dropdownField");
+            if (!dropdownContent.contains(event.target) && event.target !== dropdownField) {
+                dropdownContent.style.display = "none";
+            }
+        };
+
+        document.addEventListener("DOMContentLoaded", function () {
+            const providerDropdown = document.getElementById("providerDropdown");
+            const modelDropdown = document.getElementById("modelDropdown");
+
+            function updateModelOptions(provider) {
+                let options = [];
+
+                switch (provider) {
+                    case "xai":
+                        options = ["grok-beta"];
+                        break;
+                    case "google":
+                        options = ["gemini-1.5-flash", "gemini-1.5-flash-002", "gemini-1.5-pro", "gemini-1.5-pro-002"," gemini-1.0-pro" ];
+                        break;
+                    case "anthropic":
+                        options = ["claude-3-opus-20240229", "claude-3-sonnet-20240229"," claude-3-haiku-20240307", "claude-3-5-sonnet-20240620"," claude-3-5-sonnet-20241022"," claude-3-5-haiku-20241022"];
+                        break;
+                    case "groq":
+                        options = ["llama-3.1-405b-reasoning", "llama-3.1-70b-versatile", "llama-3.1-8b-instant", "mixtral-8x7b-32768", "llama3-8b-8192", "llama3-70b-8192", "gemma2-9b-it"];
+                                break;
+                    case "deepinfra":
+                      options = ["deepinfra01", "deepinfra02", "deepinfra03"];
+                        break;
+                    case "perplexity-ai":
+                      options = ["perplexity-ai-001", "perplexity-ai-002", "perplexity-ai-003"];
+                        break;
+                    case "openrouter":
+                      options = ["openrouter-01", "openrouter-02", "openrouter-03"];
+                        break;
+                    case "anyscale":
+                      options = ["anyscale-011", "anyscale-012", "anyscale-013"];
+                        break;
+                    case "together-ai":
+                      options = ["together-01", "together-02", "together-03"];
+                        break;
+                    case "openai":
+                        options = ["o1-preview", "o1-preview-2024-09-12", "o1-mini", "gpt-4o-mini" ];
+                        break;
+                    default:
+                        options = [];
+                }
+
+                modelDropdown.innerHTML = '';
+                options.forEach(function(option) {
+                    let optionElement = document.createElement("option");
+                    optionElement.textContent = option;
+                    modelDropdown.appendChild(optionElement);
+                });
+            }
+
+            providerDropdown.addEventListener("change", function () {
+                updateModelOptions(providerDropdown.value);
+            });
+
+            updateModelOptions(providerDropdown.value);
+        });
+
+        document.getElementById("createForm").addEventListener("submit", function(event) {
+            var nameField = document.querySelector("input[name='Name']");
+            if (nameField.value.length < 8 || !isNaN(nameField.value)) {
+                event.preventDefault();  
+                alert("Name must be at least 8 characters long and must be a string.");
+            }
+        });
+
+                document.getElementById("createForm").addEventListener("submit", function(event) {
+            const knowledgeBaseDropdown = document.querySelector("select[name='KnowledgeBaseId']");
+            const selectedOptions = Array.from(knowledgeBaseDropdown.selectedOptions).map(option => option.value);
+            const knowledgeBaseInput = document.createElement("input");
+            knowledgeBaseInput.type = "hidden";
+            knowledgeBaseInput.name = "KnowledgeBaseId";
+            knowledgeBaseInput.value = JSON.stringify(selectedOptions);
+            this.appendChild(knowledgeBaseInput);
+        });
+
+    </script>
+
+</body>
+</html>

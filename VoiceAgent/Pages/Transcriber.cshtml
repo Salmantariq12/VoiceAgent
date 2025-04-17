@@ -1,0 +1,122 @@
+﻿@page
+@model VoiceAgent.Pages.TranscriberModel
+@{
+    Layout = "_Layout";
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - VoiceAgent</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/VoiceAgent.styles.css" asp-append-version="true" />
+    <style>
+        h3, h4 {
+            color: #37AA9DCC;
+        }
+
+        textarea.form-control, select.form-select {
+            background-color: #333;
+            color: white;
+            border: 1px solid #37AA9DCC;
+        }
+
+        .btn-primary {
+            background-color: #37AA9DCC;
+            border-color: #37AA9DCC;
+        }
+
+            .btn-primary:hover {
+                background-color: white;
+                color: #37AA9DCC;
+                border-color: #37AA9DCC;
+            }
+
+        footer {
+            background-color: black;
+            color: white;
+        }
+
+        .container {
+            padding-top: 20px;
+            padding-bottom: 20px;
+        }
+
+        .mb-4 {
+            margin-bottom: 15px;
+        }
+
+        .btn-primary {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <form method="post">
+        <div class="container mt-5">
+            <input type="hidden" name="PageDataJson" value="@Model.PageDataJson" />
+
+            <div class="mb-4">
+                <h4>Language</h4>
+                <select id="languageDropdown" class="form-select" name="LanguageCode">
+                    <option selected>Select Language</option>
+                    @foreach (var language in Model.Languages)
+                    {
+                        <option value="@language.Code">@language.Name</option>
+                    }
+                </select>
+            </div>
+
+            <div class="mb-4">
+                <h4>Provider</h4>
+                <select id="providerDropdown" class="form-select" name="Provider">
+                    <option selected>Select Provider</option>
+                    <option value="assembly-ai">Assembly-AI</option>
+                    <option value="deepgram">Deepgram</option>
+                    <option value="gladia">Gladia</option>
+                    <option value="talkscriber">Talkscriber</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Next</button>
+        </div>
+    </form>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script>
+        const languageDropdown = document.getElementById("languageDropdown");
+        const providerDropdown = document.getElementById("providerDropdown");
+
+        const allLanguages = [
+            { code: "en", name: "English" },
+            { code: "es", name: "Spanish" },
+            { code: "fr", name: "French" },
+            { code: "it", name: "Italian" }
+        ];
+
+        providerDropdown.addEventListener("change", function () {
+            const selectedProvider = this.value;
+
+            languageDropdown.innerHTML = "";
+
+            if (selectedProvider === "assembly-ai") {
+                const option = document.createElement("option");
+                option.value = "en";
+                option.textContent = "English";
+                languageDropdown.appendChild(option);
+            } else {
+                allLanguages.forEach(language => {
+                    const option = document.createElement("option");
+                    option.value = language.code;
+                    option.textContent = language.name;
+                    languageDropdown.appendChild(option);
+                });
+            }
+        });
+    </script>
+</body>
+</html>

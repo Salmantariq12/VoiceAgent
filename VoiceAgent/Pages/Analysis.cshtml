@@ -1,0 +1,283 @@
+﻿@page
+@model VoiceAgent.Pages.AnalysisModel
+@{
+    Layout = "_Layout";
+}
+
+<style>
+    body {
+        background-color: black;
+        color: white;
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+    }
+
+    .btn-primary {
+        margin-top: 50px;
+        background-color: #37AA9DCC;
+        border-color: #37AA9DCC;
+        color: white;
+        padding: 10px 20px;
+        font-size: 16px;
+        width: auto;
+    }
+
+        .btn-primary:hover {
+            background-color: white;
+            color: #37AA9DCC;
+            border-color: #37AA9DCC;
+        }
+
+    .styled-input {
+        border: 1px solid #37AA9DCC;
+        border-radius: 4px;
+        padding: 10px;
+        font-size: 16px;
+        background-color: black;
+        color: white;
+        width: 100%;
+        max-width: 400px;
+    }
+
+        .styled-input:focus {
+            border-color: #37AA9DCC;
+            box-shadow: 0 0 5px rgba(55, 170, 156, 0.5);
+            outline: none;
+        }
+
+    footer {
+        background-color: black;
+        color: white;
+        padding: 10px;
+        text-align: center;
+        position: fixed;
+        bottom: 0;
+        width: 100%;
+    }
+
+    .form-label {
+        color: #37AA9DCC;
+        font-weight: bold;
+        margin-bottom: 8px;
+    }
+
+    #apiResponseDisplay {
+        background-color: black;
+        color: white;
+        padding: 20px;
+        border-radius: 8px;
+        margin-top: 30px;
+        border: 1px solid #37AA9DCC;
+        max-width: 600px;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+        #apiResponseDisplay h4 {
+            color: #37AA9DCC;
+            margin-bottom: 15px;
+        }
+
+        #apiResponseDisplay p {
+            margin-bottom: 10px;
+        }
+
+    .mt-3 {
+        margin-top: 1rem;
+    }
+
+    .success-popup {
+        display: none;
+        background-color: #37AA9DCC;
+        color: white;
+        padding: 20px;
+        border-radius: 10px;
+        max-width: 500px;
+        margin: 20px auto;
+        text-align: center;
+        font-size: 16px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: opacity 0.3s ease-in-out;
+    }
+
+        .success-popup.active {
+            display: block;
+            opacity: 1;
+        }
+
+        .success-popup.hide {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+    .list-view {
+        margin-top: 20px;
+        max-width: 600px;
+        width: 100%;
+        background-color: black;
+        color: white;
+        padding: 20px;
+        border-radius: 8px;
+        border: 1px solid #37AA9DCC;
+        box-sizing: border-box;
+    }
+
+        .list-view ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .list-view li {
+            background-color: #222222;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+        }
+
+            .list-view li span {
+                font-weight: bold;
+                color: #37AA9DCC;
+            }
+
+                .list-view li span:first-child {
+                    color: #FFFFFF;
+                    font-size: 14px;
+                }
+
+            .list-view li p {
+                margin: 5px 0;
+                color: #B0B0B0;
+                font-size: 14px;
+            }
+
+    .delete-button {
+        background-color: #ff4d4d;
+        border: none;
+        color: white;
+        padding: 5px 10px;
+        cursor: pointer;
+        border-radius: 5px;
+    }
+
+        .delete-button:hover {
+            background-color: #e60000;
+        }
+
+</style>
+
+<button id="deployAgentBtn" class="btn btn-primary">Deploy Agent</button>
+
+<div id="apiResponseDisplay" class="mt-3"></div>
+
+<div id="successPopup" class="success-popup">
+    <p>Agent Deployed Successfully!</p>
+</div>
+
+<div id="apiListDisplay" class="list-view">
+    <h4>Fetched Data:</h4>
+    <ul id="listItems"></ul>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+
+<script>
+    $(document).ready(function () {
+        fetch('/api/externalApi/getAgent', {
+            method: 'GET',
+        })
+        .then(response => response.json())
+        .then(data => {
+            const listItemsContainer = $('#listItems');
+
+            data.forEach(item => {
+                const listItem = `
+                    <li>
+                    <div><span><strong>Name:</strong></span>  ${item.name}</div>
+                    <div><span><strong>First Message:</strong></span>  ${item.firstMessage}</div>
+                    <div><span><strong>ID:</strong></span>  ${item.id}</div>
+                    <button class="delete-button" onclick="deleteData('${item.id}')">Delete</button>
+                    </li>
+                `;
+                listItemsContainer.append(listItem);
+            });
+        })
+        .catch(error => {
+            console.error("Error fetching data:", error);
+        });
+
+          $("#deployAgentBtn").on("click", function () {
+        var agentName = "@Model.AgentName";
+        var agentId = "@Model.AgentId";
+
+        var payload = {
+            provider: "vapi",
+            sipUri: "@($"sip:{Model.AgentName}@sip.vapi.ai")",
+            assistantId: agentId
+        };
+
+
+        fetch("/api/externalapi/deployAgent", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(response => response.json())
+        .then(data => {
+            
+
+            $("#deployAgentBtn").prop("disabled", true);
+            $("#deployAgentBtn").css("background-color", "#37AA9DCC");
+            $("#deployAgentBtn").text("Agent Deployed");
+
+            var responseContent = `
+                <h4>API Response:</h4>
+                <p><strong>ID:</strong>  ${data.id}</p>
+                <p><strong>Org ID:</strong>  ${data.orgId}</p>
+                <p><strong>Assistant ID:</strong>  ${data.assistantId}</p>
+                <p><strong>SIP URI:</strong>  ${data.sipUri}</p>
+                <p><strong>Created At:</strong>  ${data.createdAt}</p>
+            `;
+            $("#apiResponseDisplay").html(responseContent);
+
+            $("#successPopup").addClass("active");
+
+            setTimeout(function () {
+                $("#successPopup").removeClass("active");
+            }, 3000);
+        })
+        .catch(error => {
+            console.error("Error deploying agent:", error);
+        });
+    });
+
+
+        window.deleteData = function(id) {
+            const baseUrl = '@Url.Content("~/")';
+            const sanitizedBaseUrl = baseUrl.replace(/\/$/, ''); 
+
+            fetch(`${sanitizedBaseUrl}/api/externalapi/deleteAgent/${id}`, {
+                method: 'DELETE',
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message === 'Agent deleted successfully') {
+                    alert('Agent deleted successfully');
+                    $(`#listItems li:contains(${id})`).remove();
+                } else {
+                    alert('Failed to delete the agent');
+                }
+            })
+            .catch(error => {
+                console.error("Error deleting agent:", error);
+            });
+        };
+    });
+</script>
+

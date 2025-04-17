@@ -1,0 +1,295 @@
+﻿@page
+@model VoiceAgent.Pages.FilesModel
+@{
+    Layout = "_Layout";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - VoiceAgent</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/VoiceAgent.styles.css" asp-append-version="true" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet" />
+    <style>
+        body {
+            background-color: #121212;
+            color: #e4e4e4;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        .upload-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            padding: 40px;
+            background: #1f1f1f;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+            max-width: 600px;
+            margin: auto;
+        }
+
+        .upload-icon {
+            font-size: 80px;
+            color: #37AA9D;
+            margin-bottom: 20px;
+        }
+
+        .upload-heading {
+            font-size: 28px;
+            color: #37AA9D;
+            margin-bottom: 25px;
+        }
+
+        .upload-button {
+            background-color: #37AA9D;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 18px;
+            border: none;
+            margin-bottom: 20px;
+        }
+
+            .upload-button:hover {
+                background-color: #2c8e7e;
+            }
+
+        .file-input {
+            display: none;
+        }
+
+        .file-list {
+            width: 100%;
+            padding: 10px;
+            margin-top: 20px;
+            border-radius: 5px;
+            background-color: #333;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .file-item {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #2c2c2c;
+            border-radius: 5px;
+            color: #37AA9D;
+            font-size: 16px;
+            word-wrap: break-word;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .delete-button {
+            background-color: #ff4d4d;
+            border: none;
+            color: white;
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+            .delete-button:hover {
+                background-color: #37AA9D;
+            }
+
+        .error-message {
+            margin-top: 20px;
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 5px;
+            color: white;
+        }
+
+        .progress-container {
+            width: 100%;
+            background-color: #444;
+            border-radius: 5px;
+            height: 90px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .progress-bar {
+            width: 0%;
+            height: 100%;
+            background-color: #4caf50;
+            border-radius: 5px;
+        }
+
+        .success-message {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: green;
+            color: white;
+            font-size: 16px;
+            border-radius: 5px;
+            display: none;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="upload-container">
+        <i class="fas fa-upload upload-icon"></i>
+
+        <h2 class="upload-heading">Add a file</h2>
+
+        <label class="upload-button" for="fileInput">Choose File</label>
+        <input type="file" id="fileInput" class="file-input" />
+
+        <div id="message" class="message"></div>
+        <div id="error-message" class="error-message"></div>
+        <div id="success-message" class="success-message">File uploaded successfully!</div>
+
+        <div id="progressContainer" class="progress-container">
+            <div id="progressBar" class="progress-bar"></div>
+        </div>
+
+        <div id="fileList" class="file-list"></div>
+    </div>
+
+    <script>
+        const baseUrl = '@Url.Content("~/")'; 
+
+        function displayUploadedFile(file) {
+            var fileList = document.getElementById('fileList');
+            var fileItem = document.createElement('div');
+            fileItem.classList.add('file-item');
+
+            var fileDetails = document.createElement('p');
+            fileDetails.innerText = `Name: ${file.name}  ID: ${file.id}`;
+
+            var deleteButton = document.createElement('button');
+            deleteButton.classList.add('delete-button');
+            deleteButton.innerText = 'Delete';
+            deleteButton.onclick = function () {
+                deleteFile(file.id, fileItem);
+            };
+
+            fileItem.appendChild(fileDetails);
+            fileItem.appendChild(deleteButton);
+            fileList.appendChild(fileItem);
+        }
+
+               function deleteFile(fileId, fileItem) {
+            const sanitizedBaseUrl = baseUrl.replace(/\/$/, '');
+
+            fetch(`${sanitizedBaseUrl}/api/externalapi/deleteFile/${fileId}`, {
+                method: 'DELETE',
+            })
+                .then(response => {
+                    if (response.ok) {
+                        fileItem.remove();
+                        var message = document.getElementById('message');
+                        message.innerText = 'File Deleted Successfully!';
+                        message.style.color = 'white';
+
+                        setTimeout(function () {
+                            message.innerText = '';
+                        }, 2000);
+                    } else {
+                        document.getElementById('error-message').innerText = 'Error deleting file!';
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('error-message').innerText = 'Error deleting file!';
+                });
+        }
+
+
+                function uploadFile(file) {
+            var formData = new FormData();
+            formData.append('file', file);
+
+            const sanitizedBaseUrl = baseUrl.replace(/\/$/, '');
+
+            var progressContainer = document.getElementById('progressContainer');
+            var progressBar = document.getElementById('progressBar');
+            progressContainer.style.display = 'block';
+
+            fetch(`${sanitizedBaseUrl}/api/externalapi/uploadFile`, {
+                method: 'POST',
+                body: formData,
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Error uploading file');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data && data.id) {
+                        displayUploadedFile(data);
+                        document.getElementById('message').innerText = 'File uploaded successfully!';
+                        document.getElementById('message').style.color = 'white';
+                        setTimeout(function () {
+                            document.getElementById('message').innerText = '';
+                        }, 2000);
+                    } else {
+                        document.getElementById('error-message').innerText = 'Error uploading file!';
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('error-message').innerText = 'Error uploading file!';
+                })
+                .finally(() => {
+                    progressBar.style.width = '100%';
+                    setTimeout(function () {
+                        progressContainer.style.display = 'none';
+                    }, 500);
+                });
+        }
+
+
+        window.onload = function () {
+            const sanitizedBaseUrl = baseUrl.replace(/\/$/, '');
+
+            // GET: Fetch Files
+            const getFilesUrl = `${sanitizedBaseUrl}/api/externalapi/getFiles`;
+            fetch(getFilesUrl)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("Files:", data);
+                    if (data && Array.isArray(data)) {
+                        data.forEach(function (file) {
+                            displayUploadedFile(file);
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error("Error fetching files:", error);
+                });
+
+            // POST: Upload File
+            document.getElementById('fileInput').addEventListener('change', function (event) {
+                var file = event.target.files[0];
+                if (file) {
+                    uploadFile(file);
+                }
+            });
+        }
+    </script>
+
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+</body>
+</html>
